@@ -20,3 +20,4 @@ $view.start-x = 1;
 is $view.line(0), 'el bi', 'Last line in file is correct after moving window';
 is $view.line(1), '', 'Getting line beyond end of file is ok';
 
+done-testing;

@@ -36,3 +36,5 @@ is eventparse(«a \e [ 1 A b»), ['a', ['UP'], 'b'], "simple CSI event-parsed";
 is eventparse(«a \e [ 2 5 ; 3 ; 5 + R b»), ['a',['CSI-R',25,3,5,'+'],'b'], "complex CSI event-parsed";
 
 is eventparse(«\x7 \x1b \x1b \x0 \x1b a \x1b \x7»), ['^G', '^[', '^@', '@a', '@^G'], 'control/alt codes parsed correctly';
+
+done-testing;
