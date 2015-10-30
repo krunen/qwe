@@ -8,9 +8,9 @@ method start {
     $!term = Qwe::Terminal.new;
     $!term.init;
     $!term.alt-screen;
-    LEAVE { $!term.normal-screen }
+    END { $!term.normal-screen }
 
-    $!term.bgcolor(252);
+    $!term.bgcolor(253);
     $!term.clear-screen;
 
     $!term.fgcolor(0);
