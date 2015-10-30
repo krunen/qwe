@@ -25,6 +25,14 @@ method clear-screen {
   print "\e[2J\e[1;1H";
 }
 
+method move-to($x,$y) {
+  print "\e[{$y+1};{$x+1}H";
+}
+
+method print($s) {
+  print $s;
+}
+
 method fgcolor(Int $n) {
   print (
     $n <= 7  ?? "\e[{$n+30}m" !!
@@ -137,6 +145,7 @@ my %events = <
     CSI-~-15 F5  CSI-~-17 F6  CSI-~-18 F7  CSI-~-19 F8
     CSI-~-20 F9  CSI-~-21 F10 CSI-~-23 F11 CSI-~-24 F12
     CSI-~-2  INS CSI-~-3  DEL CSI-~-5 PGUP CSI-~-6 PGDOWN
+    CSI-~-1 HOME CSI-~-4  END
     SS3-H HOME SS3-F END
 >;
 
@@ -147,7 +156,7 @@ sub event($codes,*@param) {
     if %events{$codes} {
         $type = %events{$codes};
         $hasmod = 1;
-    } elsif %events{$codes~'-'~@param[0]} {
+    } elsif @param[0] && %events{$codes~'-'~@param[0]} {
         $type = %events{$codes~'-'~@param.shift};
         $hasmod = 1;
     } else {
