@@ -1,0 +1,19 @@
+{
+  "name" : "Qwe",
+  "source-url" : "git://github.com/krunen/qwe.git",
+  "perl" : "v6",
+  "build-depends" : [ ],
+  "provides" : {
+    "Qwe::View" : "lib/Qwe/View.pm",
+    "Qwe" : "lib/Qwe.pm",
+    "Qwe::Terminal" : "lib/Qwe/Terminal.pm",
+    "Qwe::Buffer" : "lib/Qwe/Buffer.pm"
+  },
+  "depends" : [ ],
+  "description" : "Qwe - a pure Perl 6 editor/IDE",
+  "test-depends" : [ ],
+  "version" : "*",
+  "authors" : [
+    "K. Rune Nilsen"
+  ]
+}
