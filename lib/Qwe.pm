@@ -2,6 +2,7 @@ unit class Qwe;
 use Qwe::Terminal;
 use Qwe::Buffer;
 use Qwe::View;
+use fatal;
 
 has $!term;
 

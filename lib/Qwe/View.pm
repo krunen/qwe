@@ -24,7 +24,7 @@ method visible-line-length($i?) {
 }
 
 method line-length($i?) {
-    $!buffer.line($!offset-y + ($i // $!y)).chars;
+    $!buffer.line($i // ($!offset-y + $!y)).chars;
 }
 
 method visible-lines {
@@ -71,7 +71,7 @@ method move-to($x, $y) {
             $!offset-x = $x;
             $!x = 0;
             $redraw = 1;
-        } elsif $x > $!offset-x + $!width + $!x {
+        } elsif $x > $!offset-x + $!x + $!width {
             $!offset-x = $x - ($!width/2).ceiling;
             $!x = ($!width/2).floor;
             $redraw = 1;
@@ -84,9 +84,9 @@ method move-to($x, $y) {
             $!offset-y = $y;
             $!y = 0;
             $redraw = 1;
-        } elsif $x > $!offset-y + $!height + $!y {
-            $!offset-y = $x - ($!height/2).ceiling;
-            $!x = ($!height/2).floor;
+        } elsif $y > $!offset-y + $!height + $!y {
+            $!offset-y = $y - ($!height/2).ceiling;
+            $!y = ($!height/2).floor;
             $redraw = 1;
         } else {
             $!y = $y - $!offset-y;
@@ -97,43 +97,25 @@ method move-to($x, $y) {
     self.update-cursor;
 }
 
-method move($dx is copy, $dy) {
-    my $redraw = 0;
-    if $!y + $dy >= self.visible-lines {
-        # do nothing
-    } elsif $!y + $dy > $!height - 1 {
-        $!offset-y += $dy;
-        $redraw = 1;
-    } elsif $!y + $dy < 0 {
-        if $!offset-y + $dy >= 0 {
-            $!offset-y += $dy;
-            $redraw = 1;
-        }
-    } else {
-        $!y += $dy;
-    }
-    if $!x + $dx > self.visible-line-length {
-        if $dx {
-            $dx = self.line-length - $!offset-x - $!x;
+method move($dx, $dy) {
+    my $nx = $!offset-x + $!x + $dx;
+    my $ny = $!offset-y + $!y + $dy;
+    my $domove = 1;
+    if $nx < 0 {
+        $ny--;
+        $nx = self.line-length($ny);
+    } elsif $nx > self.line-length($ny) {
+        if $dx > 0 {
+            $nx = 0;
+            $ny++;
+        } elsif $dx < 0 {
+            $nx = self.line-length($ny);
         }
     }
-    if $!x + $dx > $!width + $!pad * 2 {
-        $!offset-x += $dx;
-        $redraw = 1;
-    } elsif $!x + $dx < 0 {
-        if $!offset-x + $dx >= 0 {
-            $!offset-x += $dx;
-            $redraw = 1;
-        } elsif $!y+$!offset-y > 1 {
-            self.move-to($!buffer.line($!y+$!offset-y-1).chars,$!y+$!offset-y-1);
-            return;
-        }
-    } else {
-        $!x += $dx;
+    if $ny < 0 || $ny >= $!buffer.numlines {
+        $domove = 0;
     }
-    self.update-header;
-    self.redraw-lines if $redraw;
-    self.update-cursor;
+    self.move-to($nx, $ny) if $domove;
 }
 
 method message($s) {
