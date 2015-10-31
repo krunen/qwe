@@ -50,6 +50,8 @@ method start {
                 when 'MOUSEUP'   { $view.move-to(%param<x>-1, %param<y>-1, :view) }
                 when 'MOUSEDN'   { }
                 when 'MOUSEMOVE' { }
+                when 'INS'       { $view.toggle-insert-mode }
+                when .chars == 1 { $view.input-text($code) }
                 default {
                     $view.message("unknown event $event");
                 }

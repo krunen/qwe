@@ -38,7 +38,8 @@ method update-header {
     my $fnw = $!width - 15 - $!pad * 2;
     my $s = sprintf("%-{$fnw}.{$fnw}s %14.14s",
         $!buffer.filename,
-        'I ' ~
+        ($!insert-mode ?? 'I' !! 'O') ~
+        ' ' ~
         $*term.italic('l') ~ $!y+$!offset-y+1 ~ ' ' ~
         $*term.italic('c') ~ $!x+$!offset-x+1);
     
@@ -139,5 +140,22 @@ method message($s) {
     $*term.move-to(0,$*term.rows-$l);
     $*term.print($s2);
     $*term.bgcolor(253);
+    self.update-cursor;
+}
+
+method input-text($s) {
+    if $!insert-mode {
+        $!buffer.insert-chars($!offset-x + $!x, $!offset-y + $!y, $s);
+        $*term.print("\e[{$s.chars}@"~$s);
+    } else {
+        $!buffer.set-chars($!offset-x + $!x, $!offset-y + $!y, $s);
+        $*term.print($s);
+    }
+    $!x += $s.chars;
+}
+
+method toggle-insert-mode {
+    $!insert-mode .= not;
+    self.update-header;
     self.update-cursor;
 }
