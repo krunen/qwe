@@ -36,6 +36,7 @@ method start {
         whenever $term-events -> $event {
             my $code = $event[0];
             my %param = grep {$_ ~~ Pair}, @$event;
+            $view.remove-message;
             given $code {
                 when '^Q' | 'q'  { return }
                 when 'UP'        { $view.move(0,-1) }

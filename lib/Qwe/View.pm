@@ -10,6 +10,7 @@ has $.height is rw;
 has $.x = 0;
 has $.y = 0;
 has $.pad = 0;
+has $!message-lines;
 
 has $.insert-mode = 1;
 
@@ -55,9 +56,9 @@ method redraw {
 method redraw-lines {
     $*term.fgcolor(233);
     for 0 ..^ $!height-2 -> $l {
-        $*term.move-to($!pos-x + $!pad, $!pos-y + $l + 1);
+        $*term.move-to($!pos-x, $!pos-y + $l + 1);
         my $line = self.line($l);
-        $*term.print($line ~ ' ' x $!width-$line.chars);
+        $*term.print((' ' x $!pad) ~ $line ~ ' ' x $!width-$line.chars);
     }
     $*term.print(' ' x $!width-1);
 }
@@ -139,6 +140,22 @@ method message($s) {
     $*term.move-to(0,$*term.rows-$l);
     $*term.print($s2);
     $*term.bgcolor(253);
+    $!message-lines = $l;
+    self.update-cursor;
+}
+
+method remove-message {
+    return unless $!message-lines;
+    $*term.fgcolor(233);
+    $*term.bgcolor(253);
+    for $!height - $!message-lines - 1 .. $!height - 1 -> $l {
+        $*term.move-to($!pos-x, $!pos-y + $l + 1);
+        my $line = self.line($l);
+        $*term.print((' ' x $!pad) ~ $line ~ ' ' x $!width-$line.chars-1);
+    }
+    $*term.move-to($!pos-x, $!pos-y + $!height);
+    $*term.print(' ' x $!width-1);
+    $!message-lines = 0;
     self.update-cursor;
 }
 
