@@ -1,7 +1,7 @@
 unit class Qwe::View;
 
 has $.buffer;
-has $.window is rw handles <pad>;
+has $.window is rw handles <pad update-header update-cursor>;
 
 has $.offset-x is rw = 0;
 has $.offset-y is rw = 0;
