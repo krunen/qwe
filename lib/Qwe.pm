@@ -2,26 +2,54 @@ unit class Qwe;
 use Qwe::Terminal;
 use Qwe::Buffer;
 use Qwe::View;
-use fatal;
+use Qwe::Window;
 
 has $!term;
+has @!buffers;
+has @!views;
+has $!current-window;
+has @!windows;
 
-method start {
+method start(@filenames?) {
     $!term = Qwe::Terminal.new;
     $!term.init;
     $!term.alt-screen;
     $!term.bgcolor(253);
     $!term.clear-screen;
-    END { $!term.normal-screen }
-    CATCH { default { $!term.normal-screen; die $_.perl } }
-
     my $*term = $!term;
 
-    my $buf = Qwe::Buffer.new(:qwe(self));
-    $buf.load-file('t/testfile.txt');
-    
-    my $view = Qwe::View.new(:buffer($buf), :width($!term.cols), :height($!term.rows), :pad(1));
-    $view.redraw;
+    END { $!term.normal-screen }
+    CATCH { default { $!term.normal-screen; die $_.gist } }
+
+    if @filenames {
+        for @filenames -> $fn {
+            my $buf = Qwe::Buffer.new(:qwe(self));
+            $buf.load-file('t/testfile.txt');
+            @!buffers.push($buf);
+        }
+    } else {
+        # Project mode, find files in project
+        if "META6.json".IO.e {
+            # Perl 6 project
+            for (find-files("lib", rx/\.pm6?$/),
+                 find-files("bin", rx/<[a..z]>$/),
+                 find-files("t",   rx/t$/)).flat
+                -> $f {
+                my $buf = Qwe::Buffer.new(:qwe(self));
+                $buf.load-file($f);
+                @!buffers.push($buf);
+            }
+        }
+    }
+
+    # Create views for files
+    @!views.push(Qwe::View.new(:buffer($_), :pad(1))) for @!buffers;
+
+    # Create window with first file
+    $!current-window = Qwe::Window.new(:width($!term.cols), :height($!term.rows), :pos-x(0), :pos-y(0), :pad(1));
+    $!current-window.set-view(@!views[0]);
+    @!windows.push($!current-window);
+    $!current-window.redraw;
 
     #sub col($n) { $n <= 7  ?? "\e[{$n+30}m" !! $n <= 15 ?? "\e[{$n+82}m" !! "\e[38;5;{$n}m" }
     #sub norm {col(238)}
@@ -36,30 +64,30 @@ method start {
         whenever $term-events -> $event {
             my $code = $event[0];
             my %param = grep {$_ ~~ Pair}, @$event;
-            $view.remove-message;
             given $code {
-                when '^Q' | 'q'  { return }
-                when 'UP'        { $view.move(0,-1) }
-                when 'DOWN'      { $view.move(0,1) }
-                when 'LEFT'      { $view.move(-1,0) }
-                when 'RIGHT'     { $view.move(1,0) }
-                when 'HOME'
-                   | '^A'        { $view.move-to(0,Nil) }
-                when 'END'
-                   | '^E'        { $view.move-to($view.line-length,Nil) }
-                when '^L'        { $view.redraw }
-                when '^Z'	 { $view.undo }
-                when '^S'        { my $fn = $view.ask("Filename: "); $view.message("got: $fn"); }
-                when 'MOUSEUP'   { $view.move-to(%param<x>-1, %param<y>-1, :view) }
-                when 'MOUSEDN'   { }
-                when 'MOUSEMOVE' { }
-                when 'INS'       { $view.toggle-insert-mode }
-                when .chars == 1 { $view.input-text($code) }
+                when '^Q' {
+                    return;
+                }
                 default {
-                    $view.message("unknown event $event");
+                    if $!current-window {
+                        $!current-window.process-event($code,%param);
+                    }
                 }
             }
-            CATCH { default { $view.message($_.gist) } }
+            CATCH { default { $!current-window.message($_.gist) } }
         }
     }
+}
+
+sub find-files($dir, $re) {
+    my @res; my @sd;
+    for $dir.IO.dir -> $e {
+        if $e.f && $e ~~ $re {
+            push @res, $e;
+        }
+        if $e.d {
+            @sd.append(find-files($e, $re));
+        }
+    }
+    return (@res,@sd).flat;
 }
