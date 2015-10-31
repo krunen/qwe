@@ -47,6 +47,7 @@ method start {
                 when 'END'
                    | '^E'        { $view.move-to($view.line-length,Nil) }
                 when '^L'        { $view.redraw }
+                when '^Z'	 { $view.undo }
                 when 'MOUSEUP'   { $view.move-to(%param<x>-1, %param<y>-1, :view) }
                 when 'MOUSEDN'   { }
                 when 'MOUSEMOVE' { }

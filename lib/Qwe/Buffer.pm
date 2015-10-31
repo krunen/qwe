@@ -19,7 +19,7 @@ method insert-chars($x, $y, $s) {
 }
 
 method insert-chars-undo($x, $y, $s) {
-  @!undo.push(sub {self.delete-chars($x, $y, $s.chars)});
+  @!undo.push([sub {self.delete-chars($x, $y, $s.chars)}, $x, $y]);
   self.insert-chars($x, $y, $s);
 }
 
@@ -30,7 +30,7 @@ method set-chars($x, $y, $s) {
 
 method set-chars-undo($x, $y, $s) {
   my $old = self.get-chars($x, $y, $s.chars);
-  @!undo.push(sub { self.set-chars($x, $y, $old) });
+  @!undo.push([sub { self.set-chars($x, $y, $old) }, $x, $y]);
   self.set-chars($x, $y, $s);
 }
 
@@ -44,7 +44,7 @@ method delete-chars($x, $y, $l) {
 
 method delete-chars-undo($x, $y, $l) {
   my $old = self.get-chars($x, $y, $l);
-  @!undo.push(sub {self.insert-chars($x, $y, $old)});
+  @!undo.push([sub {self.insert-chars($x, $y, $old)}, $x, $y]);
   self.delete-chars($x, $y, $l);
 }
 
@@ -54,7 +54,7 @@ method insert-line($y, $s, $meta?) {
 }
 
 method insert-line-undo($y, $s) {
-  @!undo.push(sub {self.delete-line($y)});
+  @!undo.push([sub {self.delete-line($y)}, 0, $y]);
   self.insert-line($y, $s);
 }
 
@@ -66,7 +66,7 @@ method delete-line($y) {
 method delete-line-undo($y) {
   my $old-s = self.line($y);
   my $old-m = self.line-meta($y);
-  @!undo.push(sub {self.insert-line($y, $old-s, $old-m)});
+  @!undo.push([sub {self.insert-line($y, $old-s, $old-m)}, 0, $y]);
   self.delete-line($y);
 }
 
@@ -98,7 +98,10 @@ method set-syntax($s) {
 }
 
 method undo() {
-  .() given @!undo.pop;
+  return () unless @!undo;
+  my ($sub,$x,$y) = @(@!undo.pop);
+  $sub();
+  ($x,$y);
 }
 
 sub wide_char_rx {

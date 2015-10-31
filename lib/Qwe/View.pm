@@ -66,13 +66,12 @@ method update-cursor {
     $*term.move-to($!pos-x + $!x + $!pad, $!pos-y + $!y + 1);
 }
 
-method move-to($x is copy, $y is copy, :$view=0) {
+method move-to($x is copy, $y is copy, :$view=0, :$redraw is copy = 0) {
     if $view {
         return if $x < $!pad || $x > $!width-$!pad || $y < 1 || $y >= $!height-1;
         $x += $!offset-x - 1;
         $y += $!offset-y - 1;
     }
-    my $redraw = 0;
     if $x.defined {
         if $x < $!offset-x {
             $!offset-x = $x;
@@ -145,13 +144,22 @@ method message($s) {
 
 method input-text($s) {
     if $!insert-mode {
-        $!buffer.insert-chars($!offset-x + $!x, $!offset-y + $!y, $s);
+        $!buffer.insert-chars-undo($!offset-x + $!x, $!offset-y + $!y, $s);
         $*term.print("\e[{$s.chars}@"~$s);
     } else {
-        $!buffer.set-chars($!offset-x + $!x, $!offset-y + $!y, $s);
+        $!buffer.set-chars-undo($!offset-x + $!x, $!offset-y + $!y, $s);
         $*term.print($s);
     }
     $!x += $s.chars;
+}
+
+method undo {
+    my ($x,$y) = $!buffer.undo;
+    if $x.defined {
+        self.move-to($x, $y, :redraw);
+    } else {
+        self.message("nothing to undo");
+    }
 }
 
 method toggle-insert-mode {
