@@ -3,11 +3,11 @@ unit class Qwe::Window;
 has $.view handles <buffer line x y offset-x offset-y line-length
                     visible-lines visible-line-length input-text
                     insert-mode toggle-insert-mode undo>;
-has $.pos-x;
-has $.pos-y;
-has $.width;
-has $.height;
-has $.pad = 0;
+has $.pos-x is rw;
+has $.pos-y is rw;
+has $.width is rw;
+has $.height is rw;
+has $.pad is rw = 0;
 has $!message-lines;
 
 method set-view($v) {
@@ -16,10 +16,10 @@ method set-view($v) {
 }
 
 method update-header {
-    $*term.move-to($!pos-x, $!pos-y);
+    $*term.move-to(self.pos-x, self.pos-y);
     $*term.fgcolor(0);
     
-    my $fnw = $!width - 15 - $!pad * 2;
+    my $fnw = self.width - 15 - self.pad * 2;
     my $s = sprintf("%-{$fnw}.{$fnw}s %14.14s",
         self.buffer.filename,
         (self.insert-mode ?? 'I' !! 'O') ~
@@ -27,7 +27,7 @@ method update-header {
         $*term.italic('l') ~ self.y+self.offset-y+1 ~ ' ' ~
         $*term.italic('c') ~ self.x+self.offset-x+1);
     
-    $*term.print(' ' x $!pad ~ $*term.underline($s));
+    $*term.print(' ' x self.pad ~ $*term.underline($s));
 }
 
 method redraw {
@@ -38,21 +38,21 @@ method redraw {
 
 method redraw-lines {
     $*term.fgcolor(233);
-    for 0 ..^ $!height-2 -> $l {
-        $*term.move-to($!pos-x, $!pos-y + $l + 1);
+    for 0 ..^ self.height-2 -> $l {
+        $*term.move-to(self.pos-x, self.pos-y + $l + 1);
         my $line = self.line($l);
-        $*term.print((' ' x $!pad) ~ $line ~ ' ' x $!width-$line.chars);
+        $*term.print((' ' x self.pad) ~ $line ~ ' ' x self.width-$line.chars);
     }
-    $*term.print(' ' x $!width-1);
+    $*term.print(' ' x self.width-1);
 }
 
 method update-cursor {
-    $*term.move-to($!pos-x + self.x + $!pad, $!pos-y + self.y + 1);
+    $*term.move-to(self.pos-x + self.x + self.pad, self.pos-y + self.y + 1);
 }
 
 method move-to($x is copy, $y is copy, :$view=0, :$redraw is copy = 0) {
     if $view {
-        return if $x < $!pad || $x > $!width-$!pad || $y < 1 || $y >= $!height-1;
+        return if $x < self.pad || $x > self.width - self.pad || $y < 1 || $y >= self.height-1;
         $x += self.offset-x - 1;
         $y += self.offset-y - 1;
     }
@@ -61,9 +61,9 @@ method move-to($x is copy, $y is copy, :$view=0, :$redraw is copy = 0) {
             self.offset-x = $x;
             self.x = 0;
             $redraw = 1;
-        } elsif $x >= self.offset-x + $!width - $!pad * 2 {
-            self.offset-x = $x - ($!width/2).ceiling;
-            self.x = ($!width/2).floor;
+        } elsif $x >= self.offset-x + self.width - self.pad * 2 {
+            self.offset-x = $x - (self.width/2).ceiling;
+            self.x = (self.width/2).floor;
             $redraw = 1;
         } else {
             self.x = $x - self.offset-x;
@@ -74,9 +74,9 @@ method move-to($x is copy, $y is copy, :$view=0, :$redraw is copy = 0) {
             self.offset-y = $y;
             self.y = 0;
             $redraw = 1;
-        } elsif $y > self.offset-y + $!height + self.y {
-            self.offset-y = $y - ($!height/2).ceiling;
-            self.y = ($!height/2).floor;
+        } elsif $y > self.offset-y + self.height + self.y {
+            self.offset-y = $y - (self.height/2).ceiling;
+            self.y = (self.height/2).floor;
             $redraw = 1;
         } else {
             self.y = $y - self.offset-y;
@@ -111,16 +111,16 @@ method move($dx, $dy) {
 method message($s) {
     my $s2 = $s;
     $s2 ~~ s:g/\n/ /;
-    my $l = ($s2.chars / $!width).ceiling;
+    my $l = ($s2.chars / self.width).ceiling;
     if $l > 6 {
         $l = 6;
-        $s2 = $s2.substr(0,$!width * $l - 3) ~ '...';
+        $s2 = $s2.substr(0,self.width * $l - 3) ~ '...';
     }
-    $*term.move-to(0, self.offset-y + $!height - $l);
+    $*term.move-to(0, self.offset-y + self.height - $l);
     $*term.bgcolor(88);
     $*term.fgcolor(15);
-    $*term.print(' ' x $!width * $l);
-    $*term.move-to(0, self.offset-y + $!height - $l);
+    $*term.print(' ' x self.width * $l);
+    $*term.move-to(0, self.offset-y + self.height - $l);
     $*term.print($s2);
     $*term.bgcolor(253);
     $!message-lines = $l;
@@ -130,16 +130,16 @@ method message($s) {
 method ask($s) {
     my $s2 = $s;
     $s2 ~~ s:g/\n/ /;
-    my $l = ($s2.chars / $!width).ceiling;
+    my $l = ($s2.chars / self.width).ceiling;
     if $l > 6 {
         $l = 6;
-        $s2 = $s2.substr(0,$!width * $l - 3) ~ '...';
+        $s2 = $s2.substr(0,self.width * $l - 3) ~ '...';
     }
-    $*term.move-to(0, self.offset-y + $!height - $l);
+    $*term.move-to(0, self.offset-y + self.height - $l);
     $*term.bgcolor(88);
     $*term.fgcolor(15);
-    $*term.print(' ' x $!width * $l);
-    $*term.move-to(0, self.offset-y + $!height - $l);
+    $*term.print(' ' x self.width * $l);
+    $*term.move-to(0, self.offset-y + self.height - $l);
     print($s2);
     
     my $ans = join '', gather loop { my $c = $*IN.getc; last if $c ~~ /\n/; print($c); take $c }
@@ -154,13 +154,13 @@ method remove-message {
     return unless $!message-lines;
     $*term.fgcolor(233);
     $*term.bgcolor(253);
-    for $!height - $!message-lines - 1 .. $!height - 1 -> $l {
-        $*term.move-to($!pos-x, $!pos-y + $l + 1);
+    for self.height - $!message-lines - 1 .. self.height - 1 -> $l {
+        $*term.move-to(self.pos-x, self.pos-y + $l + 1);
         my $line = self.line($l);
-        $*term.print((' ' x $!pad) ~ $line ~ ' ' x $!width-$line.chars-1);
+        $*term.print((' ' x self.pad) ~ $line ~ ' ' x self.width-$line.chars-1);
     }
-    $*term.move-to($!pos-x, $!pos-y + $!height);
-    $*term.print(' ' x $!width-1);
+    $*term.move-to(self.pos-x, self.pos-y + self.height);
+    $*term.print(' ' x self.width-1);
     $!message-lines = 0;
     self.update-cursor;
 }
