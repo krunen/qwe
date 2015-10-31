@@ -49,6 +49,7 @@ method start {
                    | '^E'        { $view.move-to($view.line-length,Nil) }
                 when '^L'        { $view.redraw }
                 when '^Z'	 { $view.undo }
+                when '^S'        { my $fn = $view.ask("Filename: "); $view.message("got: $fn"); }
                 when 'MOUSEUP'   { $view.move-to(%param<x>-1, %param<y>-1, :view) }
                 when 'MOUSEDN'   { }
                 when 'MOUSEMOVE' { }

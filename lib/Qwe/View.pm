@@ -133,15 +133,38 @@ method message($s) {
         $l = 6;
         $s2 = $s2.substr(0,$!width * $l - 3) ~ '...';
     }
-    $*term.move-to(0,$*term.rows-$l);
+    $*term.move-to(0, $!offset-y + $!height - $l);
     $*term.bgcolor(88);
     $*term.fgcolor(15);
-    $*term.print(' ' x $*term.cols * $l);
-    $*term.move-to(0,$*term.rows-$l);
+    $*term.print(' ' x $!width * $l);
+    $*term.move-to(0, $!offset-y + $!height - $l);
     $*term.print($s2);
     $*term.bgcolor(253);
     $!message-lines = $l;
     self.update-cursor;
+}
+
+method ask($s) {
+    my $s2 = $s;
+    $s2 ~~ s:g/\n/ /;
+    my $l = ($s2.chars / $!width).ceiling;
+    if $l > 6 {
+        $l = 6;
+        $s2 = $s2.substr(0,$!width * $l - 3) ~ '...';
+    }
+    $*term.move-to(0, $!offset-y + $!height - $l);
+    $*term.bgcolor(88);
+    $*term.fgcolor(15);
+    $*term.print(' ' x $!width * $l);
+    $*term.move-to(0, $!offset-y + $!height - $l);
+    print($s2);
+    
+    my $ans = join '', gather loop { my $c = $*IN.getc; last if $c ~~ /\n/; print($c); take $c }
+
+    $*term.bgcolor(253);
+    $!message-lines = $l;
+    self.update-cursor;
+    $ans;
 }
 
 method remove-message {
