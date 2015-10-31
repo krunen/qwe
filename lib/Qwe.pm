@@ -13,7 +13,7 @@ method start {
     $!term.bgcolor(253);
     $!term.clear-screen;
     END { $!term.normal-screen }
-    CATCH { $!term.normal-screen; die $_ }
+    CATCH { default { $!term.normal-screen; die $_.perl } }
 
     my $*term = $!term;
 
@@ -30,24 +30,31 @@ method start {
     #sub red {col(88)}
     #sub green {col(28)}
     
-    my $keys = $!term.terminal-events($!term.parse-utf8-bytes($!term.stdin-bytes));
+    my $term-events = $!term.terminal-events($!term.parse-utf8-bytes($!term.stdin-bytes));
 
     react {
-        whenever $keys -> $k {
-            given $k {
-                when 'q'     { return }
-                when 'UP'    { $view.move(0,-1) }
-                when 'DOWN'  { $view.move(0,1) }
-                when 'LEFT'  { $view.move(-1,0) }
-                when 'RIGHT' { $view.move(1,0) }
+        whenever $term-events -> $event {
+            my $code = $event[0];
+            my %param = grep {$_ ~~ Pair}, @$event;
+            given $code {
+                when '^Q' | 'q'  { return }
+                when 'UP'        { $view.move(0,-1) }
+                when 'DOWN'      { $view.move(0,1) }
+                when 'LEFT'      { $view.move(-1,0) }
+                when 'RIGHT'     { $view.move(1,0) }
                 when 'HOME'
-                   | '^A'    { $view.move-to(0,Nil) }
+                   | '^A'        { $view.move-to(0,Nil) }
                 when 'END'
-                   | '^E'    { $view.move-to($view.line-length,Nil) }
+                   | '^E'        { $view.move-to($view.line-length,Nil) }
+                when '^L'        { $view.redraw }
+                when 'MOUSEUP'   { $view.move-to(%param<x>-1, %param<y>-1, :view) }
+                when 'MOUSEDN'   { }
+                when 'MOUSEMOVE' { }
                 default {
-                    $view.message("unknown key $k");
+                    $view.message("unknown event $event");
                 }
             }
+            CATCH { default { $view.message($_.gist) } }
         }
     }
 }
